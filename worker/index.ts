@@ -6,6 +6,7 @@ import { verifyPassword } from './lib/password';
 import { type AppEnv, type Role, startSession, endSession, requireAuth } from './lib/session';
 import { seedDemo } from './dev/seed';
 import employeeRoutes from './routes/employees';
+import leaveRoutes from './routes/leave';
 
 const app = new Hono<AppEnv>().basePath('/api');
 const ROLES: Role[] = ['admin', 'finance', 'manager', 'employee'];
@@ -56,4 +57,5 @@ app.post('/dev/seed', async (c) => {
 });
 
 app.route('/employees', employeeRoutes);
+app.route('/leave', leaveRoutes);
 export default app;

@@ -6,6 +6,7 @@ import AppLayout from './components/AppLayout';
 import Employees from './pages/Employees';
 import EmployeeProfile from './pages/EmployeeProfile';
 import EmployeeForm from './pages/EmployeeForm';
+import Leave from './pages/Leave';
 
 function RequireAuth() {
   const { user, loading } = useAuth();
@@ -32,7 +33,7 @@ export default function App() {
               <Route path="/employees/new" element={<EmployeeForm />} />
               <Route path="/employees/:id" element={<EmployeeProfile />} />
               <Route path="/employees/:id/edit" element={<EmployeeForm />} />
-              <Route path="/leave" element={<Placeholder title="Leave" step="Step 7" />} />
+              <Route path="/leave" element={<Leave />} />
               <Route path="/attendance" element={<Placeholder title="Attendance" step="Step 8" />} />
               <Route path="/my-day" element={<Placeholder title="My day" step="Step 8" />} />
             </Route>

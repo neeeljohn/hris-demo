@@ -6,7 +6,7 @@ const NAV: { to: string; label: string; icon: LucideIcon; roles: Role[] }[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutGrid, roles: ['admin', 'finance', 'manager'] },
   { to: '/my-day', label: 'My day', icon: Sun, roles: ['employee', 'manager'] },
   { to: '/employees', label: 'Employees', icon: Users, roles: ['admin', 'finance'] },
-  { to: '/leave', label: 'Leave', icon: CalendarDays, roles: ['admin', 'manager', 'employee'] },
+  { to: '/leave', label: 'Leave', icon: CalendarDays, roles: ['admin', 'finance', 'manager', 'employee'] },
   { to: '/attendance', label: 'Attendance', icon: Clock, roles: ['admin', 'finance', 'manager'] },
 ];
 
