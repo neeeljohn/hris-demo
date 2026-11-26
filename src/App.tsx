@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router';
 import { AuthProvider, useAuth, homeFor } from './lib/auth';
 import Login from './pages/Login';
-import Placeholder from './pages/Placeholder';
 import AppLayout from './components/AppLayout';
 import Employees from './pages/Employees';
 import EmployeeProfile from './pages/EmployeeProfile';
@@ -9,6 +8,7 @@ import EmployeeForm from './pages/EmployeeForm';
 import Leave from './pages/Leave';
 import MyDay from './pages/MyDay';
 import Attendance from './pages/Attendance';
+import Dashboard from './pages/Dashboard';
 
 function RequireAuth() {
   const { user, loading } = useAuth();
@@ -30,7 +30,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<Placeholder title="Dashboard" step="Step 10" />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/employees" element={<Employees />} />
               <Route path="/employees/new" element={<EmployeeForm />} />
               <Route path="/employees/:id" element={<EmployeeProfile />} />

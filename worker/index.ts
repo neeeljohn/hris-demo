@@ -9,6 +9,7 @@ import employeeRoutes from './routes/employees';
 import leaveRoutes from './routes/leave';
 import attendanceRoutes from './routes/attendance';
 import documentRoutes from './routes/documents';
+import dashboardRoutes from './routes/dashboard';
 
 const app = new Hono<AppEnv>().basePath('/api');
 const ROLES: Role[] = ['admin', 'finance', 'manager', 'employee'];
@@ -62,4 +63,5 @@ app.route('/employees', employeeRoutes);
 app.route('/leave', leaveRoutes);
 app.route('/attendance', attendanceRoutes);
 app.route('/documents', documentRoutes);
+app.route('/dashboard', dashboardRoutes);
 export default app;
