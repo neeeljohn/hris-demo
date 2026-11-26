@@ -26,7 +26,7 @@ export default function AppLayout() {
         {items.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm ${
+              `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${
                 isActive ? 'bg-violet-tint text-violet-text font-semibold' : 'text-body hover:bg-paper'
               }`}>
             <Icon size={18} strokeWidth={1.8} aria-hidden="true" />

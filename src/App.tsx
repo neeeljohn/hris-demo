@@ -3,6 +3,9 @@ import { AuthProvider, useAuth, homeFor } from './lib/auth';
 import Login from './pages/Login';
 import Placeholder from './pages/Placeholder';
 import AppLayout from './components/AppLayout';
+import Employees from './pages/Employees';
+import EmployeeProfile from './pages/EmployeeProfile';
+import EmployeeForm from './pages/EmployeeForm';
 
 function RequireAuth() {
   const { user, loading } = useAuth();
@@ -25,7 +28,10 @@ export default function App() {
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Placeholder title="Dashboard" step="Step 10" />} />
-              <Route path="/employees" element={<Placeholder title="Employees" step="Step 6" />} />
+              <Route path="/employees" element={<Employees />} />
+              <Route path="/employees/new" element={<EmployeeForm />} />
+              <Route path="/employees/:id" element={<EmployeeProfile />} />
+              <Route path="/employees/:id/edit" element={<EmployeeForm />} />
               <Route path="/leave" element={<Placeholder title="Leave" step="Step 7" />} />
               <Route path="/attendance" element={<Placeholder title="Attendance" step="Step 8" />} />
               <Route path="/my-day" element={<Placeholder title="My day" step="Step 8" />} />
