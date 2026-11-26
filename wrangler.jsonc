@@ -18,7 +18,8 @@
 		{
 			"binding": "hris_db",
 			"database_name": "hris-db",
-			"database_id": "54881b5e-2cc1-4428-8218-1922be9dd09f"
+			"database_id": "54881b5e-2cc1-4428-8218-1922be9dd09f",
+			"migrations_dir": "drizzle"
 		}
 	],
 	"r2_buckets": [
