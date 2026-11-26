@@ -5,7 +5,7 @@ import { Card, StatusBadge, fmtHours, fmtTime } from '../components/ui';
 
 type Log = { workDate: string; timeIn: string | null; timeOut: string | null; status: string };
 type Me = {
-  firstName: string; today: string; onLeave: boolean;
+  firstName: string; today: string; onLeave: boolean; shift: { name: string; label: string };
   todayLog: Log | null; week: Log[]; summary: Record<string, number>;
 };
 type Action = 'clock-in' | 'clock-out' | 'undo-clock-out';
@@ -91,7 +91,7 @@ export default function MyDay() {
       <div className="grid gap-5 lg:grid-cols-2">
         <section className="flex flex-col gap-4 rounded-2xl bg-brand p-7 text-white">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-violet-100">Shift 8:00 AM – 5:00 PM</span>
+            <span className="text-sm text-violet-100">{me.shift.name} shift · {me.shift.label}</span>
             <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold">{view.badge}</span>
           </div>
           <div className="font-display text-5xl font-semibold tracking-tight tabular-nums">{view.big}</div>

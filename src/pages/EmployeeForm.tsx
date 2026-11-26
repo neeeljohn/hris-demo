@@ -8,11 +8,12 @@ type Meta = {
   departments: { id: string; name: string }[];
   positions: { id: string; title: string }[];
   managers: { id: string; firstName: string; lastName: string }[];
+  shifts: { id: string; name: string }[];
 };
 
 const EMPTY = {
   firstName: '', lastName: '', email: '', phone: '',
-  departmentId: '', positionId: '', managerId: '',
+  departmentId: '', positionId: '', managerId: '', shiftId: '',
   employmentType: 'regular', status: 'active',
   hireDate: new Date().toISOString().slice(0, 10),
 };
@@ -46,6 +47,7 @@ export default function EmployeeForm() {
             firstName: v('firstName'), lastName: v('lastName'), email: v('email'), phone: v('phone'),
             departmentId: v('departmentId'), positionId: v('positionId'), managerId: v('managerId'),
             employmentType: v('employmentType'), status: v('status'), hireDate: v('hireDate'),
+            shiftId: v('shiftId'),
           });
         })
         .catch((e: Error) => setError(e.message));
@@ -115,6 +117,12 @@ export default function EmployeeForm() {
                 {meta?.managers.filter((m) => m.id !== id).map((m) => (
                   <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>
                 ))}
+              </select>
+            </Field>
+                        <Field label="Shift">
+              <select value={form.shiftId} onChange={set('shiftId')} className={inputCls}>
+                <option value="">Day (default)</option>
+                {meta?.shifts.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </Field>
             <Field label="Employment type">

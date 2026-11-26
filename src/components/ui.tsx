@@ -20,7 +20,8 @@ const STATUS: Record<string, { label: string; tone: Tone }> = {
   approved: { label: 'Approved', tone: 'green' },
   rejected: { label: 'Rejected', tone: 'red' },
   cancelled: { label: 'Cancelled', tone: 'gray' },
-  not_in: { label: 'Not in yet', tone: 'gray' },
+  not_in: { label: 'Not in yet', tone: 'amber' },
+  upcoming: { label: 'Upcoming', tone: 'gray' },
   no_record: { label: 'No record', tone: 'gray' },
 };
 

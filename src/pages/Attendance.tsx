@@ -6,18 +6,20 @@ import { Avatar, Card, StatusBadge, btnSecondary, fmtHours, fmtTime, inputCls } 
 
 type Row = {
   id: string; firstName: string; lastName: string; department: string | null;
-  timeIn: string | null; timeOut: string | null; status: string;
+  timeIn: string | null; timeOut: string | null; status: string; shift: string; shiftLabel: string;
 };
 type Data = { date: string; today: string; employees: Row[]; counts: Record<string, number> };
 
 const FILTERS: [string, string][] = [
   ['all', 'All'], ['present', 'Present'], ['late', 'Late'], ['not_in', 'Not in yet'],
-  ['on_leave', 'On leave'], ['absent', 'Absent'],
+  ['upcoming', 'Upcoming'], ['on_leave', 'On leave'], ['absent', 'Absent'],
 ];
 const DAY = 86_400_000;
+const LONG_DAY = 12 * 3_600_000;
+const isLong = (r: Row) => !!r.timeIn && !!r.timeOut && Date.parse(r.timeOut) - Date.parse(r.timeIn) > LONG_DAY;
 
 export default function Attendance() {
-  const [date, setDate] = useState(''); // empty = today
+  const [date, setDate] = useState('');
   const [data, setData] = useState<Data | null>(null);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
@@ -80,11 +82,12 @@ export default function Attendance() {
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
 
       <Card className="overflow-x-auto">
-        <table className="w-full min-w-180 text-sm">
+        <table className="w-full min-w-200 text-sm">
           <thead>
             <tr className="bg-paper text-left text-xs text-muted">
               <th className="px-5 py-3 font-medium">Employee</th>
               <th className="font-medium">Department</th>
+              <th className="font-medium">Shift</th>
               <th className="font-medium">Time in</th>
               <th className="font-medium">Time out</th>
               <th className="font-medium">Hours</th>
@@ -101,9 +104,16 @@ export default function Attendance() {
                   </Link>
                 </td>
                 <td className="text-body">{r.department ?? '—'}</td>
+                <td>
+                  <div className="font-medium">{r.shift}</div>
+                  <div className="text-xs text-muted">{r.shiftLabel}</div>
+                </td>
                 <td>{fmtTime(r.timeIn)}</td>
                 <td>{fmtTime(r.timeOut)}</td>
-                <td>{fmtHours(r.timeIn, r.timeOut)}</td>
+                <td className={isLong(r) ? 'font-semibold text-amber-700' : ''}
+                  title={isLong(r) ? 'Unusually long day. Check with the employee.' : undefined}>
+                  {fmtHours(r.timeIn, r.timeOut)}{isLong(r) && ' ⚠'}
+                </td>
                 <td><StatusBadge status={r.status} /></td>
               </tr>
             ))}

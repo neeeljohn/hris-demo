@@ -3,7 +3,7 @@ import { and, asc, desc, eq, getTableColumns, like, ne, or, sql } from 'drizzle-
 import { alias } from 'drizzle-orm/sqlite-core';
 import { getDb } from '../db/client';
 import {
-  attendanceLogs, departments, employees, leaveBalances, leaveRequests, leaveTypes, positions,
+    attendanceLogs, departments, employees, leaveBalances, leaveRequests, leaveTypes, positions, shifts,
 } from '../db/schema';
 import { type AppEnv, requireAuth, requireRole } from '../lib/session';
 
@@ -13,7 +13,7 @@ const STATUSES = ['active', 'on_leave', 'resigned'] as const;
 
 type EmployeeInput = {
   firstName: string; lastName: string; email: string; phone: string | null;
-  departmentId: string | null; positionId: string | null; managerId: string | null;
+  departmentId: string | null; positionId: string | null; managerId: string | null; shiftId: string | null;
   employmentType: (typeof TYPES)[number]; status: (typeof STATUSES)[number]; hireDate: string;
 };
 
@@ -23,7 +23,7 @@ function parseEmployee(body: Record<string, unknown>): { data: EmployeeInput } |
   const data: EmployeeInput = {
     firstName: s('firstName'), lastName: s('lastName'), email: s('email').toLowerCase(),
     phone: s('phone') || null, departmentId: s('departmentId') || null,
-    positionId: s('positionId') || null, managerId: s('managerId') || null,
+    positionId: s('positionId') || null, managerId: s('managerId') || null, shiftId: s('shiftId') || null,
     employmentType: s('employmentType') as EmployeeInput['employmentType'],
     status: (s('status') || 'active') as EmployeeInput['status'],
     hireDate: s('hireDate'),
@@ -50,6 +50,10 @@ async function refsError(db: DB, companyId: string, d: EmployeeInput, selfId?: s
     .where(and(eq(employees.id, d.managerId), eq(employees.companyId, companyId))).get()))) {
     return 'Choose a valid manager.';
   }
+  if (d.shiftId && !(await db.select({ id: shifts.id }).from(shifts)
+    .where(and(eq(shifts.id, d.shiftId), eq(shifts.companyId, companyId))).get())) {
+    return 'Choose a valid shift.';
+  }
   const dup = await db.select({ id: employees.id }).from(employees)
     .where(and(
       eq(employees.companyId, companyId), eq(employees.email, d.email),
@@ -67,7 +71,7 @@ const manager = alias(employees, 'manager');
 app.get('/meta', requireRole('admin', 'finance'), async (c) => {
   const { companyId } = c.get('user');
   const db = getDb(c.env);
-  const [depts, pos, people] = await Promise.all([
+  const [depts, pos, people, shiftList] = await Promise.all([
     db.select({ id: departments.id, name: departments.name }).from(departments)
       .where(eq(departments.companyId, companyId)).orderBy(asc(departments.name)),
     db.select({ id: positions.id, title: positions.title }).from(positions)
@@ -76,8 +80,10 @@ app.get('/meta', requireRole('admin', 'finance'), async (c) => {
       .from(employees)
       .where(and(eq(employees.companyId, companyId), ne(employees.status, 'resigned')))
       .orderBy(asc(employees.firstName)),
+    db.select({ id: shifts.id, name: shifts.name }).from(shifts)
+      .where(eq(shifts.companyId, companyId)).orderBy(asc(shifts.startMinute)),
   ]);
-  return c.json({ departments: depts, positions: pos, managers: people });
+ return c.json({ departments: depts, positions: pos, managers: people, shifts: shiftList });
 });
 
 // List with search + department filter
@@ -99,11 +105,12 @@ app.get('/', requireRole('admin', 'finance'), async (c) => {
       id: employees.id, employeeNo: employees.employeeNo,
       firstName: employees.firstName, lastName: employees.lastName, email: employees.email,
       employmentType: employees.employmentType, status: employees.status, hireDate: employees.hireDate,
-      department: departments.name, position: positions.title,
+      department: departments.name, position: positions.title, shift: shifts.name,
     })
     .from(employees)
     .leftJoin(departments, eq(employees.departmentId, departments.id))
     .leftJoin(positions, eq(employees.positionId, positions.id))
+    .leftJoin(shifts, eq(employees.shiftId, shifts.id))
     .where(and(...conds))
     .orderBy(asc(employees.firstName), asc(employees.lastName));
   return c.json({ employees: rows });
@@ -121,11 +128,13 @@ app.get('/:id', async (c) => {
     .select({
       ...getTableColumns(employees),
       department: departments.name, position: positions.title,
+      shift: shifts.name,
       managerFirstName: manager.firstName, managerLastName: manager.lastName,
     })
     .from(employees)
     .leftJoin(departments, eq(employees.departmentId, departments.id))
     .leftJoin(positions, eq(employees.positionId, positions.id))
+    .leftJoin(shifts, eq(employees.shiftId, shifts.id))   
     .leftJoin(manager, eq(employees.managerId, manager.id))
     .where(and(eq(employees.id, id), eq(employees.companyId, user.companyId)))
     .get();

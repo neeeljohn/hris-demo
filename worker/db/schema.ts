@@ -28,6 +28,16 @@ export const positions = sqliteTable('positions', {
   title: text('title').notNull(),
 }, (t) => [index('positions_company_idx').on(t.companyId)]);
 
+// Work shifts (minutes from midnight: 480 = 8:00 AM, 1320 = 10:00 PM)
+export const shifts = sqliteTable('shifts', {
+  id: id(),
+  companyId: text('company_id').notNull().references(() => companies.id),
+  name: text('name').notNull(),
+  startMinute: integer('start_minute').notNull(),
+  endMinute: integer('end_minute').notNull(), // smaller than start = ends the next day
+  graceMinutes: integer('grace_minutes').notNull().default(10),
+}, (t) => [index('shifts_company_idx').on(t.companyId)]);
+
 // Employees
 export const employees = sqliteTable('employees', {
   id: id(),
@@ -39,6 +49,7 @@ export const employees = sqliteTable('employees', {
   phone: text('phone'),
   departmentId: text('department_id').references(() => departments.id),
   positionId: text('position_id').references(() => positions.id),
+  shiftId: text('shift_id').references(() => shifts.id),
   managerId: text('manager_id').references((): AnySQLiteColumn => employees.id),
   employmentType: text('employment_type', {
     enum: ['regular', 'probationary', 'contractual'],

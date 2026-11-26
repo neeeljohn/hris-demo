@@ -4,14 +4,23 @@ import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import type { getDb } from '../db/client';
 import * as t from '../db/schema';
 import { hashPassword } from '../lib/password';
+import { tinyPdf } from '../lib/pdf';
 
 type DB = ReturnType<typeof getDb>;
 type Dept = 'Operations' | 'Sales' | 'IT' | 'Finance' | 'HR';
 type EmpType = 'regular' | 'probationary' | 'contractual';
 type LeaveName = 'Vacation' | 'Sick' | 'Emergency';
 type Status = 'pending' | 'approved' | 'rejected';
+type ShiftName = 'Day' | 'Mid' | 'Night';
 
 const DEPTS: Dept[] = ['Operations', 'Sales', 'IT', 'Finance', 'HR'];
+
+// [name, start minute, end minute]
+const SHIFTS: [ShiftName, number, number][] = [['Day', 480, 1020], ['Mid', 840, 1380], ['Night', 1320, 420]];
+const SHIFT_OF: Record<string, ShiftName> = {
+  'Kim Torres': 'Mid', 'Jun Reyes': 'Mid', 'Christine Flores': 'Mid',
+  'Leo Santiago': 'Night', 'Joy Fernandez': 'Night', 'Rachel Lim': 'Night',
+};
 
 // The first 5 people are the department heads.
 const PEOPLE: [string, string, Dept, string, EmpType, string][] = [
@@ -66,10 +75,31 @@ const REQUESTS: [string, LeaveName, number, number, Status, string][] = [
   ['Noel Aquino', 'Emergency', -6, -6, 'rejected', 'Personal matter'],
   ['Bea Mercado', 'Vacation', -3, -2, 'rejected', 'Concert in Manila'],
 ];
+// [employee, type, document name]
+const DOCS: [string, string, string][] = [
+  ['Juan Dela Cruz', 'contract', 'Employment contract'],
+  ['Juan Dela Cruz', 'government_id', 'Government IDs (SSS, PhilHealth, Pag-IBIG, TIN)'],
+  ['Juan Dela Cruz', 'certificate', 'NBI clearance'],
+  ['Maria Santos', 'contract', 'Employment contract'],
+  ['Paolo Ramos', 'contract', 'Employment contract'],
+  ['Liza Bautista', 'contract', 'Employment contract'],
+  ['Grace Villanueva', 'medical', 'Medical certificate'],
+  ['Carlo Mendoza', 'certificate', 'AWS Cloud Practitioner certificate'],
+  ['Mark Garcia', 'contract', 'Probationary contract'],
+];
 
-// Small helpers
+// Remove every file in the demo bucket (used on reset)
+async function clearBucket(bucket: R2Bucket) {
+  let cursor: string | undefined;
+  do {
+    const page = await bucket.list({ cursor });
+    if (page.objects.length) await bucket.delete(page.objects.map((o) => o.key));
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+}
+
 const DAY = 86_400_000;
-const MNL = 8 * 3_600_000; // Manila is UTC+8
+const MNL = 8 * 3_600_000;
 const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 const isWeekday = (ms: number) => ![0, 6].includes(new Date(ms).getUTCDay());
 const at = (dayMs: number, minutes: number) => new Date(dayMs + minutes * 60_000 - MNL);
@@ -78,7 +108,6 @@ const workdays = (from: number, to: number) => {
   for (let d = from; d <= to; d += DAY) if (isWeekday(d)) n++;
   return n;
 };
-// Repeatable "random" numbers, so the demo looks the same after every reset
 const rng = (seed: number) => () => {
   seed = (seed + 0x6d2b79f5) | 0;
   let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
@@ -86,12 +115,13 @@ const rng = (seed: number) => () => {
   return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
 };
 
-export async function seedDemo(db: DB, opts: { reset?: boolean } = {}) {
+export async function seedDemo(db: DB, bucket: R2Bucket, opts: { reset?: boolean } = {}) {
   if (opts.reset) {
+    await clearBucket(bucket);
     await db.batch([
       db.delete(t.sessions), db.delete(t.documents), db.delete(t.attendanceLogs),
       db.delete(t.leaveRequests), db.delete(t.leaveBalances), db.delete(t.leaveTypes),
-      db.delete(t.users), db.delete(t.employees), db.delete(t.positions),
+      db.delete(t.users), db.delete(t.employees), db.delete(t.shifts), db.delete(t.positions),
       db.delete(t.departments), db.delete(t.companies),
     ]);
   } else if (await db.select().from(t.companies).get()) {
@@ -103,15 +133,16 @@ export async function seedDemo(db: DB, opts: { reset?: boolean } = {}) {
   const now = Date.now();
   const nowManila = new Date(now + MNL);
   const today = Date.UTC(nowManila.getUTCFullYear(), nowManila.getUTCMonth(), nowManila.getUTCDate());
-  const nowMin = Math.floor((now + MNL - today) / 60_000);
   const companyId = uuid();
 
-  // Company, departments, positions
   const deptId = Object.fromEntries(DEPTS.map((d) => [d, uuid()])) as Record<Dept, string>;
   const titles = [...new Set(PEOPLE.map((p) => p[3]))];
   const positionId = Object.fromEntries(titles.map((title) => [title, uuid()]));
+  const shiftRows = SHIFTS.map(([name, startMinute, endMinute]) => ({
+    id: uuid(), companyId, name, startMinute, endMinute, graceMinutes: 10,
+  }));
+  const shiftByName = Object.fromEntries(shiftRows.map((s) => [s.name, s])) as Record<ShiftName, (typeof shiftRows)[number]>;
 
-  // Employees (heads first, so manager links always point to an earlier row)
   const ids = PEOPLE.map(() => uuid());
   const headOf = Object.fromEntries(PEOPLE.slice(0, 5).map((p, i) => [p[2], ids[i]])) as Record<Dept, string>;
   const emps = PEOPLE.map(([first, last, dept, title, type, hire], i) => ({
@@ -125,22 +156,23 @@ export async function seedDemo(db: DB, opts: { reset?: boolean } = {}) {
     departmentId: deptId[dept],
     positionId: positionId[title],
     managerId: i < 5 ? null : headOf[dept],
+    shiftId: shiftByName[SHIFT_OF[`${first} ${last}`] ?? 'Day'].id,
     employmentType: type,
     status: 'active' as 'active' | 'on_leave',
     hireDate: hire,
   }));
   const byName = new Map(emps.map((e) => [`${e.firstName} ${e.lastName}`, e]));
   const deptOf = new Map(PEOPLE.map((p, i) => [ids[i], p[2]]));
+  const shiftOf = new Map(emps.map((e) => [e.id, shiftRows.find((s) => s.id === e.shiftId)!]));
 
-  // Demo login accounts (one hash, same password for all demo users)
   const hash = await hashPassword('demo1234');
   const users = DEMO_USERS.map(([role, name]) => ({
     id: uuid(), companyId, employeeId: byName.get(name)!.id,
     email: `${role}@demo.ph`, passwordHash: hash, role,
   }));
   const userId = (role: string) => users.find((u) => u.role === role)!.id;
+  const demoIds = new Set(users.map((u) => u.employeeId));
 
-  // Leave types, requests, and who is on leave which day
   const typeId = Object.fromEntries(LEAVE_TYPES.map(([name]) => [name, uuid()])) as Record<LeaveName, string>;
   const onLeave = new Set<string>();
   const usedDays = new Map<string, number>();
@@ -175,8 +207,7 @@ export async function seedDemo(db: DB, opts: { reset?: boolean } = {}) {
     })),
   );
 
-  // Attendance for the last ~30 days, plus today so far
-  const juanId = byName.get('Juan Dela Cruz')!.id;
+  // Attendance for ~30 days, following each person's shift
   const attendance: (typeof t.attendanceLogs.$inferInsert)[] = [];
   for (let off = -30; off <= 0; off++) {
     const day = today + off * DAY;
@@ -188,26 +219,46 @@ export async function seedDemo(db: DB, opts: { reset?: boolean } = {}) {
         attendance.push({ id: uuid(), companyId, employeeId: emp.id, workDate: date, status: 'on_leave' });
         continue;
       }
+      const shift = shiftOf.get(emp.id)!;
+      const start = shift.startMinute;
+      const length = shift.endMinute > start ? shift.endMinute - start : shift.endMinute + 1440 - start;
       const roll = r();
       const late = roll < 0.18;
-      const inMin = late ? 8 * 60 + 1 + Math.floor(r() * 35) : 7 * 60 + 35 + Math.floor(r() * 25);
-      const outMin = 17 * 60 + Math.floor(r() * 40);
-      if (off === 0) {
-        if (emp.id === juanId || inMin > nowMin) continue; // Juan clocks in himself
-        attendance.push({ id: uuid(), companyId, employeeId: emp.id, workDate: date,
-          timeIn: at(day, inMin), status: late ? 'late' : 'present' });
-        continue;
-      }
-      if (roll > 0.96) {
+      const inMin = late ? start + 11 + Math.floor(r() * 30) : start - 25 + Math.floor(r() * 25);
+      const outMin = start + length + Math.floor(r() * 40);
+      const timeIn = at(day, inMin);
+      const timeOut = at(day, outMin);
+
+      if (off === 0 && demoIds.has(emp.id)) continue; // demo users clock in themselves
+      if (timeIn.getTime() > now) continue; // shift hasn't started yet
+      if (roll > 0.96 && off !== 0) {
         attendance.push({ id: uuid(), companyId, employeeId: emp.id, workDate: date, status: 'absent' });
         continue;
       }
-      attendance.push({ id: uuid(), companyId, employeeId: emp.id, workDate: date,
-        timeIn: at(day, inMin), timeOut: at(day, outMin), status: late ? 'late' : 'present' });
+      attendance.push({
+        id: uuid(), companyId, employeeId: emp.id, workDate: date, timeIn,
+        timeOut: timeOut.getTime() > now ? null : timeOut, // still working
+        status: late ? 'late' : 'present',
+      });
     }
   }
 
-  // Insert everything in one batch (D1 allows max 100 values per query, so we chunk)
+    // Sample PDF files for the demo
+    const docRows = DOCS.map(([name, type, title]) => {
+    const emp = byName.get(name)!;
+    const id = uuid();
+    const pdf = tinyPdf(title, [
+      `Employee: ${emp.firstName} ${emp.lastName}`,
+      `Employee no.: ${emp.employeeNo}`,
+      'Company: Sunrise Trading (Demo)',
+      'This is a sample document for the ACIE HRIS demo.',
+      'It is not a real record.',
+    ]);
+    return { id, companyId, employeeId: emp.id, name: title, type, r2Key: `${companyId}/${emp.id}/${id}.pdf`, sizeBytes: pdf.length, pdf };
+  });
+  await Promise.all(docRows.map((d) =>
+    bucket.put(d.r2Key, d.pdf, { httpMetadata: { contentType: 'application/pdf' } })));
+
   const stmts: BatchItem<'sqlite'>[] = [];
   const add = <T extends SQLiteTable>(table: T, rows: T['$inferInsert'][]) => {
     const size = Math.max(1, Math.floor(100 / Object.keys(getTableColumns(table)).length));
@@ -218,18 +269,15 @@ export async function seedDemo(db: DB, opts: { reset?: boolean } = {}) {
   add(t.companies, [{ id: companyId, name: 'Sunrise Trading (Demo)' }]);
   add(t.departments, DEPTS.map((d) => ({ id: deptId[d], companyId, name: d })));
   add(t.positions, titles.map((title) => ({ id: positionId[title], companyId, title })));
+  add(t.shifts, shiftRows);
   add(t.employees, emps);
   add(t.users, users);
   add(t.leaveTypes, LEAVE_TYPES.map(([name, days]) => ({ id: typeId[name], companyId, name, defaultDays: days })));
   add(t.leaveBalances, balances);
   add(t.leaveRequests, requests);
   add(t.attendanceLogs, attendance);
+  add(t.documents, docRows.map(({ pdf: _pdf, ...row }) => row));
   await db.batch(stmts as [BatchItem<'sqlite'>, ...BatchItem<'sqlite'>[]]);
 
-  return {
-    created: true,
-    employees: emps.length,
-    leaveRequests: requests.length,
-    attendance: attendance.length,
-  };
+  return { created: true, employees: emps.length, leaveRequests: requests.length, attendance: attendance.length };
 }

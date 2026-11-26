@@ -17,7 +17,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      <aside className="md:w-60 shrink-0 bg-white border-b md:border-b-0 md:border-r border-line p-4 flex flex-wrap md:flex-col md:flex-nowrap gap-1">
+      <aside className="md:w-60 shrink-0 bg-white border-b md:border-b-0 md:border-r border-line p-4 flex flex-wrap md:flex-col md:flex-nowrap gap-1 md:sticky md:top-0 md:h-screen md:overflow-y-auto">
         <div className="flex items-center gap-2.5 px-2.5 pb-4 w-full">
            <img src="/logo.png" alt="" className="size-8" />
            <span className="font-display text-lg font-bold tracking-tight">ACIE</span>

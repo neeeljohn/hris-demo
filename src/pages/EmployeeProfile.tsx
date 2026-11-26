@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { ArrowLeft, Pencil } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import DocumentsCard from '../components/DocumentsCard';
 import {
   Avatar, Card, EMPLOYMENT_LABEL, StatusBadge, btnSecondary, fmtDate, fmtTime,
 } from '../components/ui';
@@ -13,6 +14,7 @@ type Detail = {
     phone: string | null; employmentType: string; status: string; hireDate: string;
     department: string | null; position: string | null;
     managerFirstName: string | null; managerLastName: string | null;
+    shift: string | null;
   };
   balances: { name: string; allocated: number; used: number }[];
   attendance: { workDate: string; timeIn: string | null; timeOut: string | null; status: string }[];
@@ -40,6 +42,7 @@ export default function EmployeeProfile() {
     ['Department', e.department ?? '—'],
     ['Position', e.position ?? '—'],
     ['Manager', e.managerFirstName ? `${e.managerFirstName} ${e.managerLastName}` : '—'],
+    ['Shift', e.shift ?? 'Day (default)'],
     ['Type', EMPLOYMENT_LABEL[e.employmentType]],
     ['Hired', fmtDate(e.hireDate)],
   ];
@@ -65,6 +68,8 @@ export default function EmployeeProfile() {
           </Link>
         )}
       </Card>
+
+      <DocumentsCard employeeId={e.id} canManage={user?.role === 'admin'} />
 
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="p-6 lg:col-span-2">

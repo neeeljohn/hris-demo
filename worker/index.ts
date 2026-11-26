@@ -8,6 +8,7 @@ import { seedDemo } from './dev/seed';
 import employeeRoutes from './routes/employees';
 import leaveRoutes from './routes/leave';
 import attendanceRoutes from './routes/attendance';
+import documentRoutes from './routes/documents';
 
 const app = new Hono<AppEnv>().basePath('/api');
 const ROLES: Role[] = ['admin', 'finance', 'manager', 'employee'];
@@ -53,11 +54,12 @@ app.get('/auth/me', requireAuth, (c) => c.json({ user: c.get('user') }));
 // Local-only: create (or reset with ?reset=1) the full demo company
 app.post('/dev/seed', async (c) => {
   if (c.env.ALLOW_SEED !== 'true') return c.json({ error: 'Not found' }, 404);
-  const result = await seedDemo(getDb(c.env), { reset: c.req.query('reset') === '1' });
+  const result = await seedDemo(getDb(c.env), c.env.hris_files, { reset: c.req.query('reset') === '1' });
   return c.json(result);
 });
 
 app.route('/employees', employeeRoutes);
 app.route('/leave', leaveRoutes);
 app.route('/attendance', attendanceRoutes);
+app.route('/documents', documentRoutes);
 export default app;
