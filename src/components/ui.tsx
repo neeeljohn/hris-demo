@@ -20,6 +20,8 @@ const STATUS: Record<string, { label: string; tone: Tone }> = {
   approved: { label: 'Approved', tone: 'green' },
   rejected: { label: 'Rejected', tone: 'red' },
   cancelled: { label: 'Cancelled', tone: 'gray' },
+  not_in: { label: 'Not in yet', tone: 'gray' },
+  no_record: { label: 'No record', tone: 'gray' },
 };
 
 export const EMPLOYMENT_LABEL: Record<string, string> = {
@@ -60,3 +62,8 @@ export const fmtMonth = (d: string) =>
   new Date(`${d}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', year: 'numeric' });
 export const fmtTime = (iso: string | null) =>
   iso ? new Date(iso).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' }) : '—';
+export const fmtHours = (inIso: string | null, outIso: string | null) => {
+  if (!inIso || !outIso) return '—';
+  const mins = Math.max(0, Math.round((Date.parse(outIso) - Date.parse(inIso)) / 60_000));
+  return `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, '0')}m`;
+};

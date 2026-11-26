@@ -7,6 +7,8 @@ import Employees from './pages/Employees';
 import EmployeeProfile from './pages/EmployeeProfile';
 import EmployeeForm from './pages/EmployeeForm';
 import Leave from './pages/Leave';
+import MyDay from './pages/MyDay';
+import Attendance from './pages/Attendance';
 
 function RequireAuth() {
   const { user, loading } = useAuth();
@@ -34,8 +36,8 @@ export default function App() {
               <Route path="/employees/:id" element={<EmployeeProfile />} />
               <Route path="/employees/:id/edit" element={<EmployeeForm />} />
               <Route path="/leave" element={<Leave />} />
-              <Route path="/attendance" element={<Placeholder title="Attendance" step="Step 8" />} />
-              <Route path="/my-day" element={<Placeholder title="My day" step="Step 8" />} />
+              <Route path="/attendance" element={<Attendance />} />
+              <Route path="/my-day" element={<MyDay />} />
             </Route>
             <Route path="*" element={<Home />} />
           </Route>

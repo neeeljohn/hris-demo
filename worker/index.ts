@@ -7,6 +7,7 @@ import { type AppEnv, type Role, startSession, endSession, requireAuth } from '.
 import { seedDemo } from './dev/seed';
 import employeeRoutes from './routes/employees';
 import leaveRoutes from './routes/leave';
+import attendanceRoutes from './routes/attendance';
 
 const app = new Hono<AppEnv>().basePath('/api');
 const ROLES: Role[] = ['admin', 'finance', 'manager', 'employee'];
@@ -58,4 +59,5 @@ app.post('/dev/seed', async (c) => {
 
 app.route('/employees', employeeRoutes);
 app.route('/leave', leaveRoutes);
+app.route('/attendance', attendanceRoutes);
 export default app;
