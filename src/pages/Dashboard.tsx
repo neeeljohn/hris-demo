@@ -68,7 +68,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3 sm:gap-4">
         {cards.map(({ label, value, note, icon: Icon, to }) => (
           <Link key={label} to={to}
             className="rounded-2xl border border-line bg-white p-5 transition hover:border-violet-300">
