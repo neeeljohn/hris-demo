@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Plus } from 'lucide-react';
 import { api } from '../lib/api';
-import { Card, btnPrimary, btnSecondary, peso } from '../components/ui';
+import { Card, btnSecondary, peso } from '../components/ui';
 
 type Run = {
   id: string; periodStart: string; periodEnd: string; payDate: string;
@@ -149,7 +149,6 @@ export default function Payroll() {
         Government rates as of {data.ratesYear}: SSS 5% employee share (₱5,000–₱35,000 salary credit), PhilHealth 2.5%
         (₱10,000–₱100,000 base), Pag-IBIG 2% (max ₱200), BIR TRAIN semi-monthly table. Verify with your accountant before releasing pay.
       </p>
-      <Link to="/payroll" className="hidden">{/* keeps router happy on refresh */}</Link>
     </div>
   );
 }
