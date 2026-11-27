@@ -13,10 +13,26 @@ import leaveRoutes from './routes/leave';
 import attendanceRoutes from './routes/attendance';
 import documentRoutes from './routes/documents';
 import dashboardRoutes from './routes/dashboard';
+import { lt } from 'drizzle-orm';
+import { visitEvents, visits } from './db/schema';
+import trackRoutes, { recordEvent } from './routes/track';
+import ownerRoutes from './routes/owner';
 
 const app = new Hono<AppEnv>().basePath('/api');
 app.use('*', secureHeaders());
 app.use('*', csrf());
+
+// Remember what visitors do (for the owner page)
+const NO_EVENT = /^\/api\/(track|owner|auth\/demo|auth\/me|config|dev)/;
+app.use('*', async (c, next) => {
+  await next();
+  const visitId = c.req.header('X-Visit-Id');
+  const path = c.req.path;
+  const isExport = c.req.method === 'GET' && path === '/api/attendance/export';
+  if (!visitId || c.res.status >= 400 || NO_EVENT.test(path) || (c.req.method === 'GET' && !isExport)) return;
+  const name = `${c.req.method} ${path.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi, ':id')}`;
+  c.executionCtx.waitUntil(recordEvent(getDb(c.env), visitId, name));
+});
 
 const ROLES: Role[] = ['admin', 'finance', 'manager', 'employee'];
 const ipOf = (c: { req: { header: (n: string) => string | undefined } }) =>
@@ -64,6 +80,7 @@ app.post('/auth/demo', async (c) => {
 
   await countAttempt(db, key, 15);
   await startSession(c, user.id);
+  c.executionCtx.waitUntil(recordEvent(db, c.req.header('X-Visit-Id'), `demo:${role}`, role));
   return c.json({ user: publicUser(user) });
 });
 
@@ -90,12 +107,19 @@ app.route('/leave', leaveRoutes);
 app.route('/attendance', attendanceRoutes);
 app.route('/documents', documentRoutes);
 app.route('/dashboard', dashboardRoutes);
+app.route('/track', trackRoutes);
+app.route('/owner', ownerRoutes);
 
 export default {
   fetch: app.fetch,
   // Nightly reset of the demo data (see "triggers" in wrangler.jsonc)
-  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
-    if (env.DEMO_MODE !== 'true') return;
-    ctx.waitUntil(seedDemo(getDb(env), env.hris_files, { reset: true }).then(() => undefined));
+    async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    const db = getDb(env);
+    const cutoff = new Date(Date.now() - 90 * 86_400_000);
+    ctx.waitUntil(Promise.all([
+      db.delete(visits).where(lt(visits.startedAt, cutoff)),
+      db.delete(visitEvents).where(lt(visitEvents.at, cutoff)),
+      env.DEMO_MODE === 'true' ? seedDemo(db, env.hris_files, { reset: true }) : Promise.resolve(),
+    ]).then(() => undefined));
   },
 } satisfies ExportedHandler<Env>;

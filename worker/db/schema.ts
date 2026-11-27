@@ -148,3 +148,29 @@ export const loginAttempts = sqliteTable('login_attempts', {
   count: integer('count').notNull(),
   resetAt: integer('reset_at', { mode: 'timestamp' }).notNull(),
 });
+// Owner analytics (not touched by the demo reset)
+export const visits = sqliteTable('visits', {
+  id: text('id').primaryKey(), // one browser session
+  visitorId: text('visitor_id').notNull(), // same person across visits
+  ipMasked: text('ip_masked'),
+  country: text('country'),
+  city: text('city'),
+  region: text('region'),
+  device: text('device'),
+  browser: text('browser'),
+  os: text('os'),
+  referrer: text('referrer'),
+  landingPath: text('landing_path'),
+  roles: text('roles').notNull().default(''), // demo roles tried, e.g. "admin,manager"
+  pageViews: integer('page_views').notNull().default(1),
+  actions: integer('actions').notNull().default(0),
+  startedAt: integer('started_at', { mode: 'timestamp' }).notNull(),
+  lastSeenAt: integer('last_seen_at', { mode: 'timestamp' }).notNull(),
+}, (t) => [index('visits_started_idx').on(t.startedAt), index('visits_visitor_idx').on(t.visitorId)]);
+
+export const visitEvents = sqliteTable('visit_events', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  visitId: text('visit_id').notNull(),
+  name: text('name').notNull(), // e.g. "demo:admin", "POST /api/leave/:id/decide"
+  at: integer('at', { mode: 'timestamp' }).notNull(),
+}, (t) => [index('visit_events_at_idx').on(t.at)]);

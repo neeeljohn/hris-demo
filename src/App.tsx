@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router';
 import { AuthProvider, useAuth, homeFor } from './lib/auth';
 import Login from './pages/Login';
 import AppLayout from './components/AppLayout';
@@ -9,6 +10,8 @@ import Leave from './pages/Leave';
 import MyDay from './pages/MyDay';
 import Attendance from './pages/Attendance';
 import Dashboard from './pages/Dashboard';
+import Owner from './pages/Owner';
+import { startTracking, trackPageView } from './lib/track';
 
 function RequireAuth() {
   const { user, loading } = useAuth();
@@ -22,13 +25,23 @@ function Home() {
   return <Navigate to={user ? homeFor(user.role) : '/login'} replace />;
 }
 
+function Tracker() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (pathname.startsWith('/owner')) return;
+    if (!startTracking()) trackPageView();
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+    <Tracker />
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route element={<RequireAuth />}>
+          <Route element={<RequireAuth />}> 
             <Route element={<AppLayout />}>
               <Route path="/my-profile" element={<EmployeeProfile self />} />
               <Route path="/dashboard" element={<Dashboard />} />
@@ -42,6 +55,7 @@ export default function App() {
             </Route>
             <Route path="*" element={<Home />} />
           </Route>
+          <Route path="/owner" element={<Owner />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
