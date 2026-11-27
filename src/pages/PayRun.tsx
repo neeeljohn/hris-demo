@@ -193,6 +193,7 @@ export default function PayRun() {
               <span className="font-display text-2xl font-semibold">{peso(sel.net)}</span>
             </div>
             <p className="text-xs text-muted">Employer also pays {peso(sel.details.employerShare)} in contributions.</p>
+            <Link to={`/payslips/${sel.id}`} className="text-sm font-semibold text-violet-text hover:underline">Open payslip</Link>
 
             {draft && (
               <div className="space-y-2 border-t border-line pt-3">

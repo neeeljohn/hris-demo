@@ -14,6 +14,7 @@ import Owner from './pages/Owner';
 import { startTracking, trackPageView } from './lib/track';
 import Payroll from './pages/Payroll';
 import PayRun from './pages/PayRun';
+import Payslips from './pages/Payslips';
 
 function RequireAuth() {
   const { user, loading } = useAuth();
@@ -56,6 +57,8 @@ export default function App() {
               <Route path="/my-day" element={<MyDay />} />
               <Route path="/payroll" element={<Payroll />} />
               <Route path="/payroll/:id" element={<PayRun />} />
+              <Route path="/payslips" element={<Payslips />} />
+              <Route path="/payslips/:id" element={<Payslips />} />
             </Route>
             <Route path="*" element={<Home />} />
           </Route>
