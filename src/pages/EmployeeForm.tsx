@@ -16,6 +16,7 @@ const EMPTY = {
   departmentId: '', positionId: '', managerId: '', shiftId: '',
   employmentType: 'regular', status: 'active',
   hireDate: new Date().toISOString().slice(0, 10),
+  monthlyRate: '',
 };
 type Form = typeof EMPTY;
 
@@ -48,6 +49,7 @@ export default function EmployeeForm() {
             departmentId: v('departmentId'), positionId: v('positionId'), managerId: v('managerId'),
             employmentType: v('employmentType'), status: v('status'), hireDate: v('hireDate'),
             shiftId: v('shiftId'),
+            monthlyRate: employee.monthlyRate == null ? '' : String(employee.monthlyRate),
           });
         })
         .catch((e: Error) => setError(e.message));
@@ -134,6 +136,10 @@ export default function EmployeeForm() {
             </Field>
             <Field label="Hire date">
               <input required type="date" value={form.hireDate} onChange={set('hireDate')} className={inputCls} />
+            </Field>
+            <Field label="Monthly basic rate (PHP)">
+              <input type="number" min="0" step="0.01" value={form.monthlyRate} onChange={set('monthlyRate')}
+                placeholder="20000" className={inputCls} />
             </Field>
             {editing && (
               <Field label="Status">

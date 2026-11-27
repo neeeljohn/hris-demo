@@ -21,6 +21,16 @@ const SHIFT_OF: Record<string, ShiftName> = {
   'Leo Santiago': 'Night', 'Joy Fernandez': 'Night', 'Rachel Lim': 'Night',
 };
 
+// Monthly basic salary by position (PHP)
+const SALARY: Record<string, number> = {
+  'HR Manager': 55000, 'Operations Head': 60000, 'Sales Manager': 55000, 'Finance Manager': 58000,
+  'IT Lead': 60000, 'Warehouse Supervisor': 28000, 'Warehouse Staff': 16000, 'Delivery Driver': 17000,
+  'Inventory Clerk': 18000, 'Operations Assistant': 20000, 'Sales Associate': 20000,
+  'Account Executive': 30000, 'Web Developer': 45000, 'IT Support': 22000, 'Accountant': 32000,
+  'Payroll Officer': 28000, 'Accounting Clerk': 19000, 'HR Officer': 26000,
+  'Recruitment Specialist': 27000, 'HR Assistant': 18000,
+};
+
 // The first 5 people are the department heads.
 const PEOPLE: [string, string, Dept, string, EmpType, string][] = [
   ['Maria', 'Santos', 'HR', 'HR Manager', 'regular', '2019-06-03'],
@@ -121,6 +131,7 @@ export async function seedDemo(db: DB, bucket: R2Bucket, opts: { reset?: boolean
   if (opts.reset) {
     await clearBucket(bucket);
     await db.batch([
+      db.delete(t.payslips), db.delete(t.payRuns),
       db.delete(t.loginAttempts),
       db.delete(t.sessions), db.delete(t.documents), db.delete(t.attendanceLogs),
       db.delete(t.leaveRequests), db.delete(t.leaveBalances), db.delete(t.leaveTypes),
@@ -159,7 +170,7 @@ export async function seedDemo(db: DB, bucket: R2Bucket, opts: { reset?: boolean
     departmentId: deptId[dept],
     positionId: positionId[title],
     managerId: i < 5 ? null : headOf[dept],
-    shiftId: shiftByName[SHIFT_OF[`${first} ${last}`] ?? 'Day'].id,
+    shiftId: shiftByName[SHIFT_OF[`${first} ${last}`] ?? 'Day'].id, monthlyRate: SALARY[title] ?? 20000,
     employmentType: type,
     status: 'active' as 'active' | 'on_leave',
     hireDate: hire,

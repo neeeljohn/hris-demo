@@ -70,3 +70,5 @@ export const fmtHours = (inIso: string | null, outIso: string | null) => {
 };
 
 export const statusLabel = (s: string) => STATUS[s]?.label ?? s;
+export const peso = (n: number) =>
+  `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

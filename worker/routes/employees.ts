@@ -15,6 +15,7 @@ type EmployeeInput = {
   firstName: string; lastName: string; email: string; phone: string | null;
   departmentId: string | null; positionId: string | null; managerId: string | null; shiftId: string | null;
   employmentType: (typeof TYPES)[number]; status: (typeof STATUSES)[number]; hireDate: string;
+  monthlyRate: number | null;
 };
 
 // Clean up and check what the form sent
@@ -23,7 +24,7 @@ function parseEmployee(body: Record<string, unknown>): { data: EmployeeInput } |
   const data: EmployeeInput = {
     firstName: s('firstName'), lastName: s('lastName'), email: s('email').toLowerCase(),
     phone: s('phone') || null, departmentId: s('departmentId') || null,
-    positionId: s('positionId') || null, managerId: s('managerId') || null, shiftId: s('shiftId') || null,
+    positionId: s('positionId') || null, managerId: s('managerId') || null, shiftId: s('shiftId') || null, monthlyRate: s('monthlyRate') ? Number(s('monthlyRate')) : null,
     employmentType: s('employmentType') as EmployeeInput['employmentType'],
     status: (s('status') || 'active') as EmployeeInput['status'],
     hireDate: s('hireDate'),
@@ -35,6 +36,9 @@ function parseEmployee(body: Record<string, unknown>): { data: EmployeeInput } |
   if (!TYPES.includes(data.employmentType)) return { error: 'Choose an employment type.' };
   if (!STATUSES.includes(data.status)) return { error: 'Choose a status.' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data.hireDate)) return { error: 'Enter a hire date.' };
+  if (data.monthlyRate !== null && (!Number.isFinite(data.monthlyRate) || data.monthlyRate < 0 || data.monthlyRate > 10_000_000)) {
+    return { error: 'Enter a valid monthly rate.' };
+  }
   return { data };
 }
 

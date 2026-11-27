@@ -50,6 +50,7 @@ export const employees = sqliteTable('employees', {
   departmentId: text('department_id').references(() => departments.id),
   positionId: text('position_id').references(() => positions.id),
   shiftId: text('shift_id').references(() => shifts.id),
+  monthlyRate: real('monthly_rate'), // basic monthly salary in PHP
   managerId: text('manager_id').references((): AnySQLiteColumn => employees.id),
   employmentType: text('employment_type', {
     enum: ['regular', 'probationary', 'contractual'],
@@ -174,3 +175,36 @@ export const visitEvents = sqliteTable('visit_events', {
   name: text('name').notNull(), // e.g. "demo:admin", "POST /api/leave/:id/decide"
   at: integer('at', { mode: 'timestamp' }).notNull(),
 }, (t) => [index('visit_events_at_idx').on(t.at)]);
+
+// Payroll
+export const payRuns = sqliteTable('pay_runs', {
+  id: id(),
+  companyId: text('company_id').notNull().references(() => companies.id),
+  periodStart: text('period_start').notNull(), // "2026-11-01"
+  periodEnd: text('period_end').notNull(),     // "2026-11-15"
+  payDate: text('pay_date').notNull(),
+  status: text('status', { enum: ['draft', 'finalized'] }).notNull().default('draft'),
+  totalGross: real('total_gross').notNull().default(0),
+  totalNet: real('total_net').notNull().default(0),
+  createdBy: text('created_by').references(() => users.id),
+  finalizedAt: integer('finalized_at', { mode: 'timestamp' }),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('pay_runs_period_idx').on(t.companyId, t.periodStart, t.periodEnd)]);
+
+export const payslips = sqliteTable('payslips', {
+  id: id(),
+  payRunId: text('pay_run_id').notNull().references(() => payRuns.id),
+  companyId: text('company_id').notNull().references(() => companies.id),
+  employeeId: text('employee_id').notNull().references(() => employees.id),
+  monthlyRate: real('monthly_rate').notNull(),
+  gross: real('gross').notNull(),
+  taxable: real('taxable').notNull(),
+  totalDeductions: real('total_deductions').notNull(),
+  net: real('net').notNull(),
+  lines: text('lines').notNull(),                       // JSON: every earning and deduction line
+  adjustments: text('adjustments').notNull().default('[]'), // JSON: manual items added by Finance
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex('payslips_run_employee_idx').on(t.payRunId, t.employeeId),
+  index('payslips_employee_idx').on(t.employeeId),
+]);

@@ -5,7 +5,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import DocumentsCard from '../components/DocumentsCard';
 import {
-  Avatar, Card, EMPLOYMENT_LABEL, StatusBadge, btnSecondary, fmtDate, fmtTime,
+  Avatar, Card, EMPLOYMENT_LABEL, StatusBadge, btnSecondary, fmtDate, fmtTime, peso
 } from '../components/ui';
 
 type Detail = {
@@ -15,6 +15,7 @@ type Detail = {
     department: string | null; position: string | null;
     managerFirstName: string | null; managerLastName: string | null;
     shift: string | null;
+    monthlyRate: number | null;
   };
   balances: { name: string; allocated: number; used: number }[];
   attendance: { workDate: string; timeIn: string | null; timeOut: string | null; status: string }[];
@@ -49,6 +50,7 @@ export default function EmployeeProfile({ self = false }: { self?: boolean }) {
     ['Shift', e.shift ?? 'Day (default)'],
     ['Type', EMPLOYMENT_LABEL[e.employmentType]],
     ['Hired', fmtDate(e.hireDate)],
+    ['Monthly rate', e.monthlyRate != null ? peso(e.monthlyRate) : '—'],
   ];
 
   return (
