@@ -68,3 +68,5 @@ export const fmtHours = (inIso: string | null, outIso: string | null) => {
   const mins = Math.max(0, Math.round((Date.parse(outIso) - Date.parse(inIso)) / 60_000));
   return `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, '0')}m`;
 };
+
+export const statusLabel = (s: string) => STATUS[s]?.label ?? s;

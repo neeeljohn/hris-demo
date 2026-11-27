@@ -30,6 +30,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>
+              <Route path="/my-profile" element={<EmployeeProfile self />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/employees" element={<Employees />} />
               <Route path="/employees/new" element={<EmployeeForm />} />

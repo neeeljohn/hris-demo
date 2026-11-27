@@ -200,4 +200,35 @@ app.get('/team', requireRole('admin', 'finance', 'manager'), async (c) => {
   return c.json({ date, today, employees: list, counts });
 });
 
+// Attendance records for a date range (for CSV export)
+app.get('/export', requireRole('admin', 'finance', 'manager'), async (c) => {
+  const user = c.get('user');
+  const from = c.req.query('from') ?? '';
+  const to = c.req.query('to') ?? '';
+  if (!DATE_RE.test(from) || !DATE_RE.test(to) || to < from) {
+    return c.json({ error: 'Choose a valid date range.' }, 400);
+  }
+  if (Date.parse(to) - Date.parse(from) > 62 * 86_400_000) {
+    return c.json({ error: 'Export up to 2 months at a time.' }, 400);
+  }
+  const conds = [
+    eq(employees.companyId, user.companyId),
+    gte(attendanceLogs.workDate, from), lte(attendanceLogs.workDate, to),
+  ];
+  if (user.role === 'manager') conds.push(eq(employees.managerId, user.employeeId ?? ''));
+
+  const rows = await getDb(c.env).select({
+    workDate: attendanceLogs.workDate, employeeNo: employees.employeeNo,
+    firstName: employees.firstName, lastName: employees.lastName,
+    department: departments.name, shift: shifts.name,
+    timeIn: attendanceLogs.timeIn, timeOut: attendanceLogs.timeOut, status: attendanceLogs.status,
+  }).from(attendanceLogs)
+    .innerJoin(employees, eq(attendanceLogs.employeeId, employees.id))
+    .leftJoin(departments, eq(employees.departmentId, departments.id))
+    .leftJoin(shifts, eq(employees.shiftId, shifts.id))
+    .where(and(...conds))
+    .orderBy(asc(attendanceLogs.workDate), asc(employees.lastName));
+  return c.json({ rows });
+});
+
 export default app;

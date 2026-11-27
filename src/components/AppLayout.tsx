@@ -1,10 +1,11 @@
 import { NavLink, Outlet } from 'react-router';
-import { LayoutGrid, Users, CalendarDays, Clock, Sun, LogOut, type LucideIcon } from 'lucide-react';
 import { useAuth, ROLE_LABEL, type Role } from '../lib/auth';
+import { LayoutGrid, Users, CalendarDays, Clock, Sun, LogOut, UserRound, type LucideIcon } from 'lucide-react';
 
 const NAV: { to: string; label: string; icon: LucideIcon; roles: Role[] }[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutGrid, roles: ['admin', 'finance', 'manager'] },
   { to: '/my-day', label: 'My day', icon: Sun, roles: ['employee', 'manager'] },
+  { to: '/my-profile', label: 'My profile', icon: UserRound, roles: ['admin', 'finance', 'manager', 'employee'] },
   { to: '/employees', label: 'Employees', icon: Users, roles: ['admin', 'finance'] },
   { to: '/leave', label: 'Leave', icon: CalendarDays, roles: ['admin', 'finance', 'manager', 'employee'] },
   { to: '/attendance', label: 'Attendance', icon: Clock, roles: ['admin', 'finance', 'manager'] },

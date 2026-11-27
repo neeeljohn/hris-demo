@@ -21,15 +21,19 @@ type Detail = {
   leave: { id: string; type: string; startDate: string; endDate: string; days: number; status: string; reason: string | null }[];
 };
 
-export default function EmployeeProfile() {
-  const { id } = useParams();
+export default function EmployeeProfile({ self = false }: { self?: boolean }) {
+  const params = useParams();
   const { user } = useAuth();
+  const id = self ? user?.employeeId ?? '' : params.id ?? '';
   const [data, setData] = useState<Detail | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!id) return;
     api<Detail>(`/employees/${id}`).then(setData).catch((e: Error) => setError(e.message));
   }, [id]);
+
+  if (!id) return <p className="text-sm text-muted">Your account isn't linked to an employee profile.</p>;
 
   if (error) return <p role="alert" className="text-sm text-red-700">{error}</p>;
   if (!data) return <p className="text-sm text-muted">Loading…</p>;
@@ -49,9 +53,11 @@ export default function EmployeeProfile() {
 
   return (
     <div className="space-y-5">
-      <Link to="/employees" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-violet-text">
-        <ArrowLeft size={16} aria-hidden="true" /> All employees
-      </Link>
+      {!self && (
+        <Link to="/employees" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-violet-text">
+          <ArrowLeft size={16} aria-hidden="true" /> All employees
+        </Link>
+      )}
 
       <Card className="flex flex-wrap items-center gap-4 p-6">
         <Avatar first={e.firstName} last={e.lastName} size="size-14 text-lg" />

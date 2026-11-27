@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Plus, Search } from 'lucide-react';
+import { Download, Plus, Search } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { Avatar, Card, EMPLOYMENT_LABEL, StatusBadge, btnPrimary, fmtMonth, inputCls } from '../components/ui';
+import { downloadCsv } from '../lib/csv';
+import {
+  Avatar, Card, EMPLOYMENT_LABEL, StatusBadge, btnPrimary, btnSecondary, fmtMonth, inputCls, statusLabel,
+} from '../components/ui';
+
 
 type Row = {
   id: string; employeeNo: string; firstName: string; lastName: string; email: string;
@@ -24,6 +28,18 @@ export default function Employees() {
   useEffect(() => {
     api<{ departments: Dept[] }>('/employees/meta').then((d) => setDepts(d.departments)).catch(() => {});
   }, []);
+
+  const exportCsv = () => {
+    if (!rows) return;
+    downloadCsv(
+      `employees-${new Date().toISOString().slice(0, 10)}.csv`,
+      ['Employee no.', 'First name', 'Last name', 'Email', 'Position', 'Department', 'Type', 'Status', 'Hire date'],
+      rows.map((e) => [
+        e.employeeNo, e.firstName, e.lastName, e.email, e.position, e.department,
+        EMPLOYMENT_LABEL[e.employmentType], statusLabel(e.status), e.hireDate,
+      ]),
+    );
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -46,11 +62,16 @@ export default function Employees() {
             {rows ? `${rows.length} ${rows.length === 1 ? 'employee' : 'employees'}` : 'Loading…'}
           </p>
         </div>
-        {user?.role === 'admin' && (
-          <Link to="/employees/new" className={btnPrimary}>
-            <Plus size={18} aria-hidden="true" /> Add employee
-          </Link>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={exportCsv} disabled={!rows?.length} className={`${btnSecondary} disabled:opacity-50`}>
+            <Download size={16} aria-hidden="true" /> Export CSV
+          </button>
+          {user?.role === 'admin' && (
+            <Link to="/employees/new" className={btnPrimary}>
+              <Plus size={18} aria-hidden="true" /> Add employee
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { api } from '../lib/api';
-import { Avatar, Card, StatusBadge, btnSecondary, fmtHours, fmtTime, inputCls } from '../components/ui';
+import { downloadCsv } from '../lib/csv';
+import {
+  Avatar, Card, StatusBadge, btnSecondary, fmtHours, fmtTime, inputCls, statusLabel,
+} from '../components/ui';
 
 type Row = {
   id: string; firstName: string; lastName: string; department: string | null;
@@ -17,12 +20,19 @@ const FILTERS: [string, string][] = [
 const DAY = 86_400_000;
 const LONG_DAY = 12 * 3_600_000;
 const isLong = (r: Row) => !!r.timeIn && !!r.timeOut && Date.parse(r.timeOut) - Date.parse(r.timeIn) > LONG_DAY;
+type ExportRow = {
+  workDate: string; employeeNo: string; firstName: string; lastName: string; department: string | null;
+  shift: string | null; timeIn: string | null; timeOut: string | null; status: string;
+};
+const t = (iso: string | null) => (iso ? fmtTime(iso) : '');
+const h = (a: string | null, b: string | null) => (a && b ? fmtHours(a, b) : '');
 
 export default function Attendance() {
   const [date, setDate] = useState('');
   const [data, setData] = useState<Data | null>(null);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     api<Data>(`/attendance/team${date ? `?date=${date}` : ''}`)
@@ -37,6 +47,43 @@ export default function Attendance() {
 
   const rows = data?.employees.filter((r) => filter === 'all' || r.status === filter) ?? [];
   const count = (key: string) => (key === 'all' ? data?.employees.length ?? 0 : data?.counts[key] ?? 0);
+
+    const exportDay = () => {
+    if (!data) return;
+    downloadCsv(
+      `attendance-${data.date}.csv`,
+      ['Date', 'Employee', 'Department', 'Shift', 'Time in', 'Time out', 'Hours', 'Status'],
+      data.employees.map((r) => [
+        data.date, `${r.firstName} ${r.lastName}`, r.department, r.shift,
+        t(r.timeIn), t(r.timeOut), h(r.timeIn, r.timeOut), statusLabel(r.status),
+      ]),
+    );
+  };
+
+  async function exportMonth() {
+    if (!data) return;
+    const [y, m] = data.date.split('-').map(Number);
+    const from = `${data.date.slice(0, 8)}01`;
+    const lastDay = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+    const to = lastDay < data.today ? lastDay : data.today;
+    setExporting(true);
+    setError('');
+    try {
+      const d = await api<{ rows: ExportRow[] }>(`/attendance/export?from=${from}&to=${to}`);
+      downloadCsv(
+        `attendance-${data.date.slice(0, 7)}.csv`,
+        ['Date', 'Employee no.', 'Employee', 'Department', 'Shift', 'Time in', 'Time out', 'Hours', 'Status'],
+        d.rows.map((r) => [
+          r.workDate, r.employeeNo, `${r.firstName} ${r.lastName}`, r.department, r.shift ?? 'Day',
+          t(r.timeIn), t(r.timeOut), h(r.timeIn, r.timeOut), statusLabel(r.status),
+        ]),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -66,17 +113,27 @@ export default function Attendance() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map(([key, label]) => (
-          <button key={key} type="button" onClick={() => setFilter(key)}
-            className={`h-9 rounded-full border px-3.5 text-sm font-medium ${
-              filter === key
-                ? 'border-violet-300 bg-violet-tint text-violet-text'
-                : 'border-field bg-white text-body hover:border-violet-300'
-            }`}>
-            {label} <span className="ml-1 text-muted">{count(key)}</span>
+       <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {FILTERS.map(([key, label]) => (
+            <button key={key} type="button" onClick={() => setFilter(key)}
+              className={`h-9 rounded-full border px-3.5 text-sm font-medium ${
+                filter === key
+                  ? 'border-violet-300 bg-violet-tint text-violet-text'
+                  : 'border-field bg-white text-body hover:border-violet-300'
+              }`}>
+              {label} <span className="ml-1 text-muted">{count(key)}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={exportDay} disabled={!data} className={`${btnSecondary} h-9 disabled:opacity-50`}>
+            <Download size={16} aria-hidden="true" /> Export day
           </button>
-        ))}
+          <button type="button" onClick={exportMonth} disabled={!data || exporting} className={`${btnSecondary} h-9 disabled:opacity-50`}>
+            <Download size={16} aria-hidden="true" /> {exporting ? 'Exporting…' : 'Export month'}
+          </button>
+        </div>
       </div>
 
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
