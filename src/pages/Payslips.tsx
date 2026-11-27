@@ -120,6 +120,7 @@ function PayslipView({ id }: { id: string }) {
         </p>
       )}
 
+    <div id="payslip">
       <Card className="space-y-5 p-6 sm:p-8 print:border-0 print:shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -186,7 +187,8 @@ function PayslipView({ id }: { id: string }) {
           <p>Your employer also paid {peso(slip.details.employerShare)} in SSS, PhilHealth and Pag-IBIG contributions for you. This is not deducted from your pay.</p>
           <p>Computed with {ratesYear} government rates. System-generated payslip; no signature needed.</p>
         </div>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

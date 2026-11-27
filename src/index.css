@@ -20,3 +20,12 @@
 body {
   @apply bg-paper text-ink font-sans antialiased;
 }
+
+/* Print only the payslip */
+@media print {
+  @page { size: A4; margin: 0; }
+  body * { visibility: hidden; }
+  #payslip, #payslip * { visibility: visible; }
+  #payslip { position: absolute; top: 0; left: 0; width: 100%; padding: 14mm; }
+  #root, #root * { overflow: visible !important; }
+}
