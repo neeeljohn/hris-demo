@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import {
-  CalendarDays, Clock, LayoutGrid, LogOut, Menu, Sun, UserRound, Users, X, type LucideIcon,
+  CalendarDays, Clock, LayoutGrid, LogOut, Menu, Sun, UserRound, Users, X, type LucideIcon, Banknote,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { ROLE_LABEL, useAuth, type Role } from '../lib/auth';
@@ -13,6 +13,7 @@ const NAV: { to: string; label: string; icon: LucideIcon; roles: Role[] }[] = [
   { to: '/employees', label: 'Employees', icon: Users, roles: ['admin', 'finance'] },
   { to: '/leave', label: 'Leave', icon: CalendarDays, roles: ['admin', 'finance', 'manager', 'employee'] },
   { to: '/attendance', label: 'Attendance', icon: Clock, roles: ['admin', 'finance', 'manager'] },
+  { to: '/payroll', label: 'Payroll', icon: Banknote, roles: ['admin', 'finance'] },
 ];
 
 export default function AppLayout() {

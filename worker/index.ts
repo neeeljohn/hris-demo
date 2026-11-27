@@ -17,6 +17,7 @@ import { lt } from 'drizzle-orm';
 import { visitEvents, visits } from './db/schema';
 import trackRoutes, { recordEvent } from './routes/track';
 import ownerRoutes from './routes/owner';
+import payrollRoutes from './routes/payroll';
 
 const app = new Hono<AppEnv>().basePath('/api');
 app.use('*', secureHeaders());
@@ -109,6 +110,7 @@ app.route('/documents', documentRoutes);
 app.route('/dashboard', dashboardRoutes);
 app.route('/track', trackRoutes);
 app.route('/owner', ownerRoutes);
+app.route('/payroll', payrollRoutes);
 
 export default {
   fetch: app.fetch,

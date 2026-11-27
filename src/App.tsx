@@ -12,6 +12,8 @@ import Attendance from './pages/Attendance';
 import Dashboard from './pages/Dashboard';
 import Owner from './pages/Owner';
 import { startTracking, trackPageView } from './lib/track';
+import Payroll from './pages/Payroll';
+import PayRun from './pages/PayRun';
 
 function RequireAuth() {
   const { user, loading } = useAuth();
@@ -52,6 +54,8 @@ export default function App() {
               <Route path="/leave" element={<Leave />} />
               <Route path="/attendance" element={<Attendance />} />
               <Route path="/my-day" element={<MyDay />} />
+              <Route path="/payroll" element={<Payroll />} />
+              <Route path="/payroll/:id" element={<PayRun />} />
             </Route>
             <Route path="*" element={<Home />} />
           </Route>
