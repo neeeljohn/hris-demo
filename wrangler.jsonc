@@ -7,6 +7,7 @@
 	"name": "hris-demo",
 	"main": "worker/index.ts",
 	"vars": { "DEMO_MODE": "true" },
+	"triggers": { "crons": ["0 18 * * *"] },
 	"compatibility_date": "2026-11-23",
 	"assets": {
 		"not_found_handling": "single-page-application",

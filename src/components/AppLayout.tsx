@@ -1,6 +1,8 @@
 import { NavLink, Outlet } from 'react-router';
 import { useAuth, ROLE_LABEL, type Role } from '../lib/auth';
 import { LayoutGrid, Users, CalendarDays, Clock, Sun, LogOut, UserRound, type LucideIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { api } from '../lib/api';
 
 const NAV: { to: string; label: string; icon: LucideIcon; roles: Role[] }[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutGrid, roles: ['admin', 'finance', 'manager'] },
@@ -13,6 +15,10 @@ const NAV: { to: string; label: string; icon: LucideIcon; roles: Role[] }[] = [
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
+  const [demo, setDemo] = useState(false);
+  useEffect(() => {
+    api<{ demo: boolean }>('/config').then((d) => setDemo(d.demo)).catch(() => {});
+  }, []);
   if (!user) return null;
   const items = NAV.filter((n) => n.roles.includes(user.role));
 
@@ -48,6 +54,11 @@ export default function AppLayout() {
       </aside>
 
       <main className="flex-1 min-w-0 p-6 md:p-8">
+        {demo && (
+          <div role="note" className="mb-5 rounded-xl border border-violet-200 bg-violet-tint/60 px-4 py-2.5 text-sm text-violet-text">
+            You're exploring a demo with sample data. Everything resets every night at 2 AM (Philippine time).
+          </div>
+        )}
         <Outlet />
       </main>
     </div>

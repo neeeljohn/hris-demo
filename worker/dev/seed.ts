@@ -3,7 +3,6 @@ import type { BatchItem } from 'drizzle-orm/batch';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import type { getDb } from '../db/client';
 import * as t from '../db/schema';
-import { hashPassword } from '../lib/password';
 import { tinyPdf } from '../lib/pdf';
 
 type DB = ReturnType<typeof getDb>;
@@ -57,6 +56,9 @@ const DEMO_USERS = [
   ['manager', 'Paolo Ramos'],
   ['employee', 'Juan Dela Cruz'],
 ] as const;
+
+// Precomputed hash of the demo password "demo1234" (it's public anyway)
+const DEMO_HASH = 'pbkdf2$100000$9b6e3662bca20a12a8e7ade969c10311$7f914cd546881b9a08637de49ddb8f86a94dd466714bd9eea9e2de18e628b5f3';
 
 const LEAVE_TYPES: [LeaveName, number][] = [['Vacation', 15], ['Sick', 10], ['Emergency', 3]];
 
@@ -119,6 +121,7 @@ export async function seedDemo(db: DB, bucket: R2Bucket, opts: { reset?: boolean
   if (opts.reset) {
     await clearBucket(bucket);
     await db.batch([
+      db.delete(t.loginAttempts),
       db.delete(t.sessions), db.delete(t.documents), db.delete(t.attendanceLogs),
       db.delete(t.leaveRequests), db.delete(t.leaveBalances), db.delete(t.leaveTypes),
       db.delete(t.users), db.delete(t.employees), db.delete(t.shifts), db.delete(t.positions),
@@ -165,7 +168,7 @@ export async function seedDemo(db: DB, bucket: R2Bucket, opts: { reset?: boolean
   const deptOf = new Map(PEOPLE.map((p, i) => [ids[i], p[2]]));
   const shiftOf = new Map(emps.map((e) => [e.id, shiftRows.find((s) => s.id === e.shiftId)!]));
 
-  const hash = await hashPassword('demo1234');
+  const hash = DEMO_HASH;
   const users = DEMO_USERS.map(([role, name]) => ({
     id: uuid(), companyId, employeeId: byName.get(name)!.id,
     email: `${role}@demo.ph`, passwordHash: hash, role,

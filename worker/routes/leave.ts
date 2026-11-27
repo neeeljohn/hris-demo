@@ -72,6 +72,7 @@ app.post('/', async (c) => {
   }
   const days = workdays(b.startDate, b.endDate);
   if (!days) return c.json({ error: 'Your dates fall on a weekend.' }, 400);
+  if ((b.reason?.length ?? 0) > 300) return c.json({ error: 'Keep the reason under 300 characters.' }, 400);
 
   const db = getDb(c.env);
   const type = await db.select().from(leaveTypes)

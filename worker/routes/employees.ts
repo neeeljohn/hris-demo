@@ -29,6 +29,8 @@ function parseEmployee(body: Record<string, unknown>): { data: EmployeeInput } |
     hireDate: s('hireDate'),
   };
   if (!data.firstName || !data.lastName) return { error: 'Enter a first and last name.' };
+  if (data.firstName.length > 60 || data.lastName.length > 60) return { error: 'Names can be up to 60 characters.' };
+  if (data.email.length > 120 || (data.phone?.length ?? 0) > 20) return { error: 'Email or phone is too long.' };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return { error: 'Enter a valid email.' };
   if (!TYPES.includes(data.employmentType)) return { error: 'Choose an employment type.' };
   if (!STATUSES.includes(data.status)) return { error: 'Choose a status.' };
@@ -172,6 +174,9 @@ app.post('/', requireRole('admin'), async (c) => {
 
   const { total } = (await db.select({ total: sql<number>`count(*)` }).from(employees)
     .where(eq(employees.companyId, companyId)).get())!;
+    if (c.env.DEMO_MODE === 'true' && total >= 60) {
+    return c.json({ error: 'The demo is limited to 60 employees. It resets every night.' }, 403);
+  }
   const id = crypto.randomUUID();
   await db.insert(employees).values({
     ...parsed.data, id, companyId, employeeNo: `EMP-${String(total + 1).padStart(3, '0')}`,

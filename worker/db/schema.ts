@@ -141,3 +141,10 @@ export const documents = sqliteTable('documents', {
   sizeBytes: integer('size_bytes').notNull(),
   uploadedAt: createdAt(),
 }, (t) => [index('documents_employee_idx').on(t.employeeId)]);
+
+// Failed / demo login counters for rate limiting
+export const loginAttempts = sqliteTable('login_attempts', {
+  key: text('key').primaryKey(), // e.g. "login:203.0.113.5"
+  count: integer('count').notNull(),
+  resetAt: integer('reset_at', { mode: 'timestamp' }).notNull(),
+});
